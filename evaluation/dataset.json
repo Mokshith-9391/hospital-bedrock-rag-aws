@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is the visitor policy?",
+    "retrieved_ids": [
+      "visitor-policy",
+      "security-policy",
+      "parking"
+    ],
+    "relevant_ids": [
+      "visitor-policy"
+    ],
+    "grounded": true
+  }
+]

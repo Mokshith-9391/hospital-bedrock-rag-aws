@@ -1,0 +1,1 @@
+Use Amazon Textract for scanned PDFs/images. Preserve page/line/table metadata where possible. Store normalized text in S3 and ingest the normalized artifact into the Bedrock Knowledge Base.

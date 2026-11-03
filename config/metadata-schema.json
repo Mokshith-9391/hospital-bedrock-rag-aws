@@ -1,0 +1,13 @@
+{
+  "department": "string",
+  "document_type": "policy|guideline|procedure|insurance|patient_education|drug_information|other",
+  "classification": "public|internal|restricted",
+  "access_roles": [
+    "string"
+  ],
+  "effective_date": "YYYY-MM-DD",
+  "expiry_date": "YYYY-MM-DD|null",
+  "language": "string",
+  "country": "string",
+  "source_uri": "string"
+}

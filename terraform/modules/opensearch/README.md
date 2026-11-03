@@ -1,0 +1,1 @@
+Configure OpenSearch Serverless encryption/network/data-access policies, collection, vector index, and KB service role.

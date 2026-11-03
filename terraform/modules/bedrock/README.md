@@ -1,0 +1,1 @@
+Configure Bedrock Knowledge Base, data source, Titan Text Embeddings V2, parser/OCR flow, OpenSearch Serverless collection/index, Guardrail, and prompt configuration here. Validate exact provider/region support before apply.

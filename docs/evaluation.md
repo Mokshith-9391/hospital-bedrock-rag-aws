@@ -1,0 +1,1 @@
+Evaluate retrieval with Precision@K, Recall@K, MRR/NDCG; generation with groundedness, citation correctness, answer relevance, refusal/abstention quality, latency and cost. Include prompt-injection and ACL leakage tests.
