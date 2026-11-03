@@ -6,9 +6,6 @@ variable "allowed_origins" {
   default = ["http://localhost:5173"]
 }
 
-variable "knowledge_base_id" { type = string }
-variable "knowledge_base_arn" { type = string }
-variable "model_arn" { type = string }
 variable "guardrail_id" {
   type    = string
   default = ""
