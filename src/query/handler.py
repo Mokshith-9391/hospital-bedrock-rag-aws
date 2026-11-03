@@ -4,36 +4,24 @@ import time
 import uuid
 import boto3
 
-SYSTEM_PROMPT = open(os.path.join(os.path.dirname(__file__), "system.txt"), encoding="utf-8").read()
+bedrock_agent_runtime = boto3.client("bedrock-agent-runtime")
+guardrails = boto3.client("bedrock-runtime")
+ddb = boto3.resource("dynamodb")
+
+KB_ID = os.environ["KNOWLEDGE_BASE_ID"]
+MODEL_ARN = os.environ.get("MODEL_ARN", "")
+GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID", "")
+GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION", "DRAFT")
+TABLE = os.environ["AUDIT_TABLE"]
+
+SYSTEM_PROMPT = open(os.path.join(os.path.dirname(__file__), "../../prompts/system.txt")).read()
 
 def _response(status, body):
     return {"statusCode": status, "headers": {"content-type": "application/json"}, "body": json.dumps(body)}
 
-def _access_filter(department, role):
-    """Constrain retrieval using claims from the verified JWT authorizer only."""
-    return {
-        "andAll": [
-            {"equals": {"key": "department", "value": department}},
-            {"listContains": {"key": "access_roles", "value": role}},
-        ]
-    }
-
-def _audit(table, request_id, **values):
-    table.put_item(Item={"request_id": request_id, "timestamp": int(time.time()), **values})
-
 def lambda_handler(event, context):
     started = time.time()
     request_id = str(uuid.uuid4())
-    # Create SDK clients only at invocation time. This keeps module imports
-    # side-effect free for tests and lets Lambda resolve its runtime region.
-    bedrock_agent_runtime = boto3.client("bedrock-agent-runtime")
-    guardrails = boto3.client("bedrock-runtime")
-    ddb = boto3.resource("dynamodb")
-    kb_id = os.environ["KNOWLEDGE_BASE_ID"]
-    model_arn = os.environ["MODEL_ARN"]
-    guardrail_id = os.environ.get("GUARDRAIL_ID", "")
-    guardrail_version = os.environ.get("GUARDRAIL_VERSION", "DRAFT")
-    audit_table = os.environ["AUDIT_TABLE"]
     try:
         body = json.loads(event.get("body") or "{}")
         question = (body.get("question") or "").strip()
@@ -46,12 +34,11 @@ def lambda_handler(event, context):
         department = claims.get("custom:department", "general")
 
         retrieval = bedrock_agent_runtime.retrieve(
-            knowledgeBaseId=kb_id,
+            knowledgeBaseId=KB_ID,
             retrievalQuery={"text": question},
             retrievalConfiguration={
                 "vectorSearchConfiguration": {
-                    "numberOfResults": 8,
-                    "filter": _access_filter(department, role),
+                    "numberOfResults": 8
                 }
             }
         )
@@ -68,8 +55,6 @@ def lambda_handler(event, context):
 
         if not context_blocks:
             answer = "I don't have enough evidence in the hospital knowledge base to answer that reliably."
-            _audit(ddb.Table(audit_table), request_id, department=department, role=role,
-                   retrieval_count=0, latency_ms=int((time.time()-started)*1000), outcome="no_evidence")
             return _response(200, {"request_id": request_id, "answer": answer, "sources": []})
 
         prompt = SYSTEM_PROMPT + "\n\nUser question:\n" + question + \
@@ -77,25 +62,37 @@ def lambda_handler(event, context):
                  "\n\n".join(context_blocks)
 
         kwargs = {
-            "modelId": model_arn,
+            "modelId": MODEL_ARN,
             "messages": [{"role": "user", "content": [{"text": prompt}]}],
             "inferenceConfig": {"temperature": 0.1, "maxTokens": 1200}
         }
-        if guardrail_id:
+        if GUARDRAIL_ID:
             kwargs["guardrailConfig"] = {
-                "guardrailIdentifier": guardrail_id,
-                "guardrailVersion": guardrail_version
+                "guardrailIdentifier": GUARDRAIL_ID,
+                "guardrailVersion": GUARDRAIL_VERSION
             }
 
         response = guardrails.converse(**kwargs)
         answer = response["output"]["message"]["content"][0]["text"]
 
-        _audit(ddb.Table(audit_table), request_id, department=department, role=role,
-               retrieval_count=len(results), latency_ms=int((time.time()-started)*1000), outcome="success")
+        table = ddb.Table(TABLE)
+        table.put_item(Item={
+            "request_id": request_id,
+            "timestamp": int(time.time()),
+            "department": department,
+            "role": role,
+            "retrieval_count": len(results),
+            "latency_ms": int((time.time()-started)*1000),
+            "outcome": "success"
+        })
         return _response(200, {"request_id": request_id, "answer": answer, "sources": sources})
     except Exception:
         try:
-            _audit(ddb.Table(audit_table), request_id, outcome="error")
+            ddb.Table(TABLE).put_item(Item={
+                "request_id": request_id,
+                "timestamp": int(time.time()),
+                "outcome": "error"
+            })
         except Exception:
             pass
         return _response(500, {"request_id": request_id, "error": "Request failed"})

@@ -1,9 +1,0 @@
-variable "name" { type = string }
-variable "source_dir" { type = string }
-variable "knowledge_base_id" { type = string }
-variable "knowledge_base_arn" { type = string }
-variable "model_arn" { type = string }
-variable "guardrail_id" { type = string }
-variable "guardrail_version" { type = string }
-variable "audit_table_arn" { type = string }
-variable "audit_table_name" { type = string }
