@@ -30,3 +30,4 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
 }
 
 output "document_bucket" { value = aws_s3_bucket.documents.bucket }
+output "document_bucket_arn" { value = aws_s3_bucket.documents.arn }
