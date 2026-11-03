@@ -36,6 +36,17 @@ CloudFront/WAF -> React -> API Gateway -> Cognito JWT -> Query Lambda
 
 For scanned PDFs, the ingestion pipeline should perform OCR before placing normalized text/PDF artifacts into the KB data source. For production, Amazon Textract is the preferred AWS OCR component for scanned documents; this starter uses an OCR adapter interface so Textract can be wired without changing the KB layer.
 
+## Current deployment status
+
+The Terraform configuration is a validated foundation only. It currently
+creates an S3 document bucket, Cognito user pool/client, DynamoDB audit table,
+HTTP API shell, and CloudWatch log group. It does **not** yet define the Lambda
+function or API integration, Bedrock Knowledge Base/data source/guardrail,
+OpenSearch Serverless collection and policies, CloudFront/WAF, frontend hosting,
+or CI/CD. Do not run `terraform apply` expecting a working application until
+those components and their least-privilege IAM roles are implemented and
+reviewed. Use only synthetic or de-identified documents during all testing.
+
 ## Deployment sequence
 
 1. Configure AWS credentials and region.
