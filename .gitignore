@@ -1,0 +1,13 @@
+.terraform/
+.build/
+*.tfstate
+*.tfstate.*
+crash.log
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
